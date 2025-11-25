@@ -3,7 +3,7 @@ import vue from '@vitejs/plugin-vue'
 
 export default defineConfig({
   plugins: [vue()],
-  base: './',
+  base: '/',
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
@@ -15,5 +15,10 @@ export default defineConfig({
   },
   server: {
     port: 3000
+  },
+  publicDir: 'public',
+  assetsInclude: ['**/*.mp4', '**/*.webm', '**/*.ogg'],
+  optimizeDeps: {
+    include: ['vue']
   }
 })

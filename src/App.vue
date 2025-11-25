@@ -106,12 +106,12 @@ onMounted(() => {
     // 加载 CSS
     const link = document.createElement('link')
     link.rel = 'stylesheet'
-    link.href = '/APlayer.min.css'
+    link.href = './APlayer.min.css'
     document.head.appendChild(link)
     
     // 加载 JS
     const script = document.createElement('script')
-    script.src = '/APlayer.min.js'
+    script.src = './APlayer.min.js'
     script.onload = () => {
       initAPlayer()
     }
