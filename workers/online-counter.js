@@ -2,7 +2,6 @@ export class OnlineCounter {
   constructor(state, env) {
     this.state = state
     this.env = env
-    this.sessions = []
   }
 
   async fetch(request) {
@@ -10,8 +9,6 @@ export class OnlineCounter {
     const [client, server] = Object.values(pair)
 
     this.state.acceptWebSocket(server)
-    this.sessions.push(server)
-    
     this.broadcast()
 
     return new Response(null, {
@@ -33,27 +30,24 @@ export class OnlineCounter {
 
   async webSocketClose(ws, code, reason, wasClean) {
     ws.close(1000, 'Goodbye')
-    this.sessions = this.sessions.filter(s => s !== ws)
     this.broadcast()
   }
 
   async webSocketError(ws, error) {
-    this.sessions = this.sessions.filter(s => s !== ws)
     this.broadcast()
   }
 
   broadcast() {
-    const count = this.sessions.length
+    const sessions = this.state.getWebSockets()
+    const count = sessions.length
     const message = JSON.stringify({ type: 'count', count })
     
-    this.sessions = this.sessions.filter(session => {
+    for (const session of sessions) {
       try {
         session.send(message)
-        return true
       } catch (err) {
-        return false
       }
-    })
+    }
   }
 }
 
