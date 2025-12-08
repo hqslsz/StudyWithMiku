@@ -4,6 +4,10 @@
       class="countdown-clock" 
       :class="{ 'settings-open': showSettings }"
       @click="toggleSettings"
+      @mouseenter="onUIMouseEnter"
+      @mouseleave="onUIMouseLeave"
+      @touchstart="onUITouchStart"
+      @touchend="onUITouchEnd"
     >
       <div class="online-indicator">
         <span class="online-dot" :class="{ connected: isConnected }"></span>
@@ -19,7 +23,7 @@
       </div>
     </div>
     <transition name="fade">
-      <div v-if="showSettings" class="settings-overlay" @click.self="closeSettings">
+      <div v-if="showSettings" class="settings-overlay" @click.self="closeSettings" @mouseenter="onUIMouseEnter" @mouseleave="onUIMouseLeave" @touchstart="onUITouchStart" @touchend="onUITouchEnd">
         <div class="settings-panel">
           <div class="settings-header">
             <h3>番茄钟设置</h3>
@@ -133,7 +137,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useOnlineCount } from '../composables/useOnlineCount.js'
-import { duckMusicForNotification } from '../utils/eventBus.js'
+import { duckMusicForNotification, setHoveringUI } from '../utils/eventBus.js'
 
 const WS_URL = 'wss://online.study.mikugame.icu/ws'
 const { onlineCount, isConnected } = useOnlineCount(WS_URL)
@@ -275,6 +279,21 @@ const showNotification = () => {
       icon: '/favicon.ico'
     })
   }
+}
+
+const onUIMouseEnter = () => {
+  setHoveringUI(true)
+}
+
+const onUIMouseLeave = () => {
+  setHoveringUI(false)
+}
+
+const onUITouchStart = () => {
+  setHoveringUI(true)
+}
+const onUITouchEnd = () => {
+  setHoveringUI(false)
 }
 
 onMounted(() => {

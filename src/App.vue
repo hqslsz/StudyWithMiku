@@ -17,11 +17,11 @@
       <h1 class="title">Study with Miku</h1>
       <p class="subtitle">Love by SHSHOUSE</p>
     </div>
-    <button class="switch-video-btn" @click="switchVideo" :class="{ hidden: !showControls }">
+    <button class="switch-video-btn" @click="switchVideo" :class="{ hidden: !showControls }" @mouseenter="onUIMouseEnter" @mouseleave="onUIMouseLeave" @touchstart="onUITouchStart" @touchend="onUITouchEnd">
       切换
     </button>
     
-    <button class="fullscreen-btn" @click="toggleFullscreen" :class="{ hidden: !showControls }">
+    <button class="fullscreen-btn" @click="toggleFullscreen" :class="{ hidden: !showControls }" @mouseenter="onUIMouseEnter" @mouseleave="onUIMouseLeave" @touchstart="onUITouchStart" @touchend="onUITouchEnd">
       {{ isFullscreen ? '退出全屏' : '全屏' }}
     </button>
     
@@ -38,28 +38,60 @@ import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useFullscreen } from '@vueuse/core'
 import { getAllSongs } from './data/songs.js'
 import { loadScript, loadStyle, preloadVideos } from './utils/cache.js'
-import { setAPlayerInstance } from './utils/eventBus.js'
+import { setAPlayerInstance, setHoveringUI, isHoveringUI } from './utils/eventBus.js'
 import PomodoroTimer from './components/PomodoroTimer.vue'
 
 const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
 const showControls = ref(true)
 const inactivityTimer = ref(null)
 
-const onMouseMove = () => {
-  showControls.value = true
-  document.body.style.cursor = 'default'
+const startHideTimer = () => {
   if (inactivityTimer.value) {
     clearTimeout(inactivityTimer.value)
   }
   inactivityTimer.value = setTimeout(() => {
-    showControls.value = false
-    document.body.style.cursor = 'none'
+    if (!isHoveringUI.value) {
+      showControls.value = false
+      document.body.style.cursor = 'none'
+    }
   }, 3000)
 }
 
+const onMouseMove = () => {
+  showControls.value = true
+  document.body.style.cursor = 'default'
+  startHideTimer()
+}
+
 const onMouseLeave = () => {
-  showControls.value = false
-  document.body.style.cursor = 'none'
+  if (!isHoveringUI.value) {
+    showControls.value = false
+    document.body.style.cursor = 'none'
+  }
+}
+
+const onUIMouseEnter = () => {
+  isHoveringUI.value = true
+  if (inactivityTimer.value) {
+    clearTimeout(inactivityTimer.value)
+  }
+}
+
+const onUIMouseLeave = () => {
+  isHoveringUI.value = false
+  startHideTimer()
+}
+
+const onUITouchStart = () => {
+  isHoveringUI.value = true
+  if (inactivityTimer.value) {
+    clearTimeout(inactivityTimer.value)
+  }
+}
+
+const onUITouchEnd = () => {
+  isHoveringUI.value = false
+  startHideTimer()
 }
 
 const videoRef = ref(null)
@@ -164,6 +196,10 @@ onMounted(() => {
       playerElement.style.transition = 'opacity 0.3s ease'
       playerElement.style.opacity = '1'
       playerElement.style.pointerEvents = 'auto'
+      playerElement.addEventListener('mouseenter', onUIMouseEnter)
+      playerElement.addEventListener('mouseleave', onUIMouseLeave)
+      playerElement.addEventListener('touchstart', onUITouchStart)
+      playerElement.addEventListener('touchend', onUITouchEnd)
     }
     aplayerInitialized.value = true
     setAPlayerInstance(aplayer.value)

@@ -2,6 +2,7 @@ import { ref } from 'vue'
 
 const musicVolume = ref(0.7)
 const originalVolume = ref(0.7)
+const isHoveringUI = ref(false)
 let aplayerInstance = null
 
 export const setAPlayerInstance = (instance) => {
@@ -50,4 +51,10 @@ export const duckMusicForNotification = async (notificationDuration = 3000) => {
   }, notificationDuration)
 }
 
-export { musicVolume, originalVolume }
+export const setHoveringUI = (value) => {
+  isHoveringUI.value = value
+}
+
+export const getHoveringUI = () => isHoveringUI
+
+export { musicVolume, originalVolume, isHoveringUI }
