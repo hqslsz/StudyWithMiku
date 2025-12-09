@@ -36,9 +36,9 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useFullscreen } from '@vueuse/core'
-import { getAllSongs } from './data/songs.js'
 import { loadScript, loadStyle, preloadVideos } from './utils/cache.js'
 import { setAPlayerInstance, setHoveringUI, isHoveringUI } from './utils/eventBus.js'
+import { useMusic } from './composables/useMusic.js'
 import PomodoroTimer from './components/PomodoroTimer.vue'
 
 const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
@@ -95,10 +95,9 @@ const onUITouchEnd = () => {
 }
 
 const videoRef = ref(null)
-const R2_BASE_URL = 'https://studycdn.mikugame.icu'
 const videos = [
-  `${R2_BASE_URL}/mp4/1.mp4`,
-  `${R2_BASE_URL}/mp4/2.mp4`
+  '/1.mp4',
+  '/2.mp4'
 ]
 const currentVideo = ref(videos[0])
 const currentVideoIndex = ref(0)
@@ -108,21 +107,9 @@ const switchVideo = () => {
   currentVideo.value = videos[currentVideoIndex.value]
 }
 
-// APlayer 相关变量
 const aplayer = ref(null)
 const aplayerInitialized = ref(false)
-
-// 获取所有歌曲列表
-const getAllSongsForAPlayer = () => {
-  const allSongs = getAllSongs()
-  
-  return allSongs.map(song => ({
-    name: song.title,
-    artist: song.artist,
-    url: song.src,
-    cover: ''
-  }))
-}
+const { songs, loadSongs, loading } = useMusic()
 
 const onVideoLoaded = () => {
   console.log('视频加载完成')
@@ -162,27 +149,27 @@ onMounted(() => {
   }
   const loadAPlayer = async () => {
     if (window.APlayer) {
-      initAPlayer()
+      await initAPlayer()
       return
     }
     
     try {
       await loadStyle('./APlayer.min.css')
       await loadScript('./APlayer.min.js')
-      initAPlayer()
+      await initAPlayer()
     } catch (error) {
       console.error('加载 APlayer 资源失败:', error)
     }
   }
   
-  const initAPlayer = () => {
-    const songs = getAllSongsForAPlayer()
+  const initAPlayer = async () => {
+    await loadSongs()
     
     aplayer.value = new APlayer({
       container: document.getElementById('aplayer'),
       fixed: true,
       autoplay: true,
-      audio: songs,
+      audio: songs.value,
       lrcType: 0,
       theme: '#2980b9',
       loop: 'all',

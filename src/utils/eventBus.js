@@ -9,6 +9,8 @@ export const setAPlayerInstance = (instance) => {
   aplayerInstance = instance
 }
 
+export const getAPlayerInstance = () => aplayerInstance
+
 export const fadeVolume = (targetVolume, duration = 500) => {
   return new Promise((resolve) => {
     if (!aplayerInstance) {

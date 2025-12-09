@@ -127,6 +127,28 @@
                 ></span>
               </div>
             </div>
+            
+            <div class="playlist-settings">
+              <div class="setting-group">
+                <label>平台</label>
+                <select v-model="selectedPlatform" class="platform-select">
+                  <option v-for="p in PLATFORMS" :key="p.value" :value="p.value">{{ p.label }}</option>
+                </select>
+              </div>
+              <div class="setting-group">
+                <label>歌单ID</label>
+                <input 
+                  type="text" 
+                  v-model="inputPlaylistId"
+                  placeholder="歌单ID"
+                />
+              </div>
+              <div class="playlist-actions">
+                <button class="action-btn apply-btn" @click="applyPlaylist">获取</button>
+                <button class="action-btn reset-playlist-btn" @click="resetPlaylist">恢复默认</button>
+              </div>
+              <a class="help-link" href="https://www.bilibili.com/opus/1144256090307821590" target="_blank">歌单ID怎么获取?</a>
+            </div>
           </div>
         </div>
       </div>
@@ -137,10 +159,35 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useOnlineCount } from '../composables/useOnlineCount.js'
-import { duckMusicForNotification, setHoveringUI } from '../utils/eventBus.js'
+import { useMusic } from '../composables/useMusic.js'
+import { duckMusicForNotification, setHoveringUI, getAPlayerInstance } from '../utils/eventBus.js'
 
 const WS_URL = 'wss://online.study.mikugame.icu/ws'
 const { onlineCount, isConnected } = useOnlineCount(WS_URL)
+const { playlistId, platform, applyCustomPlaylist, resetToLocal, songs, DEFAULT_PLAYLIST_ID, PLATFORMS } = useMusic()
+
+const inputPlaylistId = ref('')
+const selectedPlatform = ref(platform.value)
+
+const applyPlaylist = async () => {
+  if (!inputPlaylistId.value) return
+  await applyCustomPlaylist(selectedPlatform.value, inputPlaylistId.value)
+  const ap = getAPlayerInstance()
+  if (ap) {
+    ap.list.clear()
+    ap.list.add(songs.value)
+  }
+}
+
+const resetPlaylist = async () => {
+  inputPlaylistId.value = ''
+  await resetToLocal()
+  const ap = getAPlayerInstance()
+  if (ap) {
+    ap.list.clear()
+    ap.list.add(songs.value)
+  }
+}
 
 const STATUS = {
   FOCUS: 'focus',
@@ -627,6 +674,80 @@ onUnmounted(() => {
 
 .pomodoro-dot.filled {
   background: #ff6b6b;
+}
+
+.playlist-settings {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.playlist-settings .setting-group input {
+  width: 140px;
+  text-align: left;
+  padding: 0.3rem 0.5rem;
+}
+
+.platform-select {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  padding: 0.3rem 0.5rem;
+  color: white;
+  width: 100px;
+  cursor: pointer;
+}
+
+.platform-select option {
+  background: #333;
+  color: white;
+}
+
+.playlist-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.8rem;
+  justify-content: center;
+}
+
+.action-btn {
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.action-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.apply-btn {
+  background: rgba(76, 175, 80, 0.3);
+  border-color: rgba(76, 175, 80, 0.5);
+}
+
+.reset-playlist-btn {
+  background: rgba(255, 152, 0, 0.3);
+  border-color: rgba(255, 152, 0, 0.5);
+}
+
+.help-link {
+  display: block;
+  margin-top: 0.8rem;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-decoration: none;
+  text-align: center;
+  transition: color 0.3s ease;
+}
+
+.help-link:hover {
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: underline;
 }
 
 /* 过渡动画 */
