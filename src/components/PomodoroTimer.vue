@@ -161,6 +161,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useOnlineCount } from '../composables/useOnlineCount.js'
 import { useMusic } from '../composables/useMusic.js'
 import { duckMusicForNotification, setHoveringUI, getAPlayerInstance } from '../utils/eventBus.js'
+import { getPomodoroSettings, savePomodoroSettings } from '../utils/userSettings.js'
 
 const WS_URL = 'wss://online.study.mikugame.icu/ws'
 const { onlineCount, isConnected } = useOnlineCount(WS_URL)
@@ -195,23 +196,27 @@ const STATUS = {
   LONG_BREAK: 'longBreak'
 }
 
-const timeLeft = ref(25 * 60)
+const savedPomodoro = getPomodoroSettings()
+const focusDuration = ref(savedPomodoro.focusDuration)
+const breakDuration = ref(savedPomodoro.breakDuration)
+const timeLeft = ref(focusDuration.value * 60)
 const isRunning = ref(false)
 const currentStatus = ref(STATUS.FOCUS)
-const focusDuration = ref(25)
-const breakDuration = ref(5)
 const completedPomodoros = ref(0)
 const showSettings = ref(false)
+
 watch(focusDuration, (newVal) => {
   if (currentStatus.value === STATUS.FOCUS && !isRunning.value) {
     timeLeft.value = newVal * 60
   }
+  savePomodoroSettings(newVal, breakDuration.value)
 })
 
 watch(breakDuration, (newVal) => {
   if (currentStatus.value !== STATUS.FOCUS && !isRunning.value) {
     timeLeft.value = newVal * 60
   }
+  savePomodoroSettings(focusDuration.value, newVal)
 })
 
 let timer = null

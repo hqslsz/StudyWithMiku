@@ -41,6 +41,7 @@ import { useFullscreen } from '@vueuse/core'
 import { loadScript, loadStyle, preloadVideos } from './utils/cache.js'
 import { setAPlayerInstance, setHoveringUI, isHoveringUI } from './utils/eventBus.js'
 import { useMusic } from './composables/useMusic.js'
+import { getVideoIndex, saveVideoIndex, getMusicIndex, saveMusicIndex } from './utils/userSettings.js'
 import PomodoroTimer from './components/PomodoroTimer.vue'
 
 const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
@@ -102,12 +103,14 @@ const videos = [
   '/2.mp4',
   '/3.mp4'
 ]
-const currentVideo = ref(videos[0])
-const currentVideoIndex = ref(0)
+const savedVideoIndex = getVideoIndex()
+const currentVideoIndex = ref(savedVideoIndex < videos.length ? savedVideoIndex : 0)
+const currentVideo = ref(videos[currentVideoIndex.value])
 
 const switchVideo = () => {
   currentVideoIndex.value = (currentVideoIndex.value + 1) % videos.length
   currentVideo.value = videos[currentVideoIndex.value]
+  saveVideoIndex(currentVideoIndex.value)
 }
 
 const aplayer = ref(null)
@@ -183,6 +186,7 @@ onMounted(() => {
   const initAPlayer = async () => {
     await loadSongs()
     
+    const savedMusicIndex = getMusicIndex()
     aplayer.value = new APlayer({
       container: document.getElementById('aplayer'),
       fixed: true,
@@ -198,6 +202,14 @@ onMounted(() => {
       listFolded: false,
       listMaxHeight: '200px',
       width: '300px'
+    })
+    
+    if (savedMusicIndex > 0 && savedMusicIndex < songs.value.length) {
+      aplayer.value.list.switch(savedMusicIndex)
+    }
+    
+    aplayer.value.on('listswitch', (e) => {
+      saveMusicIndex(e.index)
     })
     
     // 设置播放器样式
