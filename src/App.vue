@@ -30,6 +30,9 @@
     <!-- 番茄钟！＞﹏＜ -->
     <PomodoroTimer />
     
+    <!-- 入站公告弹窗 -->
+    <AnnouncementModal />
+    
     <!-- APlayer 播放器 -->
     <div id="aplayer" class="aplayer-container"></div>
   </div>
@@ -43,6 +46,7 @@ import { setAPlayerInstance, setHoveringUI, isHoveringUI } from './utils/eventBu
 import { useMusic } from './composables/useMusic.js'
 import { getVideoIndex, saveVideoIndex, getMusicIndex, saveMusicIndex } from './utils/userSettings.js'
 import PomodoroTimer from './components/PomodoroTimer.vue'
+import AnnouncementModal from './components/AnnouncementModal.vue'
 
 const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
 const showControls = ref(true)
