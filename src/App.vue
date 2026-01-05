@@ -28,7 +28,7 @@
     </button>
     
     <!-- 番茄钟！＞﹏＜ -->
-    <PomodoroTimer />
+    <PomodoroTimer :showControls="showControls" />
     
     <!-- 入站公告弹窗 -->
     <AnnouncementModal />

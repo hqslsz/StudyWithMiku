@@ -2,7 +2,7 @@
   <div>
     <div 
       class="countdown-clock" 
-      :class="{ 'settings-open': showSettings }"
+      :class="{ 'settings-open': showSettings, 'hidden': hidePomodoroOnIdle && !props.showControls }"
       @click="toggleSettings"
       @mouseenter="onUIMouseEnter"
       @mouseleave="onUIMouseLeave"
@@ -72,14 +72,21 @@
                   <div class="setting-group">
                     <label>专注结束时暂停音乐</label>
                     <label class="toggle-switch">
-                      <input type="checkbox" v-model="pauseMusicOnFocusEnd" @change="saveMusicPauseSettings(pauseMusicOnFocusEnd, pauseMusicOnBreakEnd)"/>
+                      <input type="checkbox" v-model="pauseMusicOnFocusEnd" @change="saveMusicPauseSettings(pauseMusicOnFocusEnd, pauseMusicOnBreakEnd, hidePomodoroOnIdle)"/>
                       <span class="toggle-slider"></span>
                     </label>
                   </div>
                   <div class="setting-group">
                     <label>休息结束时暂停音乐</label>
                     <label class="toggle-switch">
-                      <input type="checkbox" v-model="pauseMusicOnBreakEnd" @change="saveMusicPauseSettings(pauseMusicOnFocusEnd, pauseMusicOnBreakEnd)"/>
+                      <input type="checkbox" v-model="pauseMusicOnBreakEnd" @change="saveMusicPauseSettings(pauseMusicOnFocusEnd, pauseMusicOnBreakEnd, hidePomodoroOnIdle)"/>
+                      <span class="toggle-slider"></span>
+                    </label>
+                  </div>
+                  <div class="setting-group">
+                    <label>无操作隐藏番茄钟</label>
+                    <label class="toggle-switch">
+                      <input type="checkbox" v-model="hidePomodoroOnIdle" @change="saveMusicPauseSettings(pauseMusicOnFocusEnd, pauseMusicOnBreakEnd, hidePomodoroOnIdle)"/>
                       <span class="toggle-slider"></span>
                     </label>
                   </div>
@@ -180,6 +187,13 @@ import { duckMusicForNotification, setHoveringUI, getAPlayerInstance } from '../
 import { getPomodoroSettings, savePomodoroSettings, saveMusicPauseSettings } from '../utils/userSettings.js'
 import Updates from './Updates.vue'
 
+const props = defineProps({
+  showControls: {
+    type: Boolean,
+    default: true
+  }
+})
+
 const { onlineCount, isConnected } = useOnlineCount(import.meta.env.VITE_WS_URL)
 const { playlistId, platform, applyCustomPlaylist, resetToLocal, songs, DEFAULT_PLAYLIST_ID, PLATFORMS } = useMusic()
 
@@ -218,6 +232,7 @@ const focusDuration = ref(savedPomodoro.focusDuration)
 const breakDuration = ref(savedPomodoro.breakDuration)
 const pauseMusicOnFocusEnd = ref(savedPomodoro.pauseMusicOnFocusEnd || false)
 const pauseMusicOnBreakEnd = ref(savedPomodoro.pauseMusicOnBreakEnd || false)
+const hidePomodoroOnIdle = ref(savedPomodoro.hidePomodoroOnIdle || false)
 const timeLeft = ref(focusDuration.value * 60)
 const isRunning = ref(false)
 const currentStatus = ref(STATUS.FOCUS)
@@ -234,8 +249,15 @@ let timeInterval = null
 let timer = null
 let studyTimeCounter = 0
 
-watch(focusDuration, (newVal) => { if (currentStatus.value === STATUS.FOCUS && !isRunning.value) timeLeft.value = newVal * 60; savePomodoroSettings(newVal, breakDuration.value) })
-watch(breakDuration, (newVal) => { if (currentStatus.value !== STATUS.FOCUS && !isRunning.value) timeLeft.value = newVal * 60; savePomodoroSettings(focusDuration.value, newVal) })
+watch(focusDuration, (newVal) => { if (currentStatus.value === STATUS.FOCUS && !isRunning.value) timeLeft.value = newVal * 60; savePomodoroSettings(newVal, breakDuration.value, pauseMusicOnFocusEnd.value, pauseMusicOnBreakEnd.value, hidePomodoroOnIdle.value) })
+watch(breakDuration, (newVal) => { if (currentStatus.value !== STATUS.FOCUS && !isRunning.value) timeLeft.value = newVal * 60; savePomodoroSettings(focusDuration.value, newVal, pauseMusicOnFocusEnd.value, pauseMusicOnBreakEnd.value, hidePomodoroOnIdle.value) })
+watch(hidePomodoroOnIdle, (newVal) => {
+  if (newVal) {
+    document.addEventListener('mousemove', handleGlobalMouseMove)
+  } else {
+    document.removeEventListener('mousemove', handleGlobalMouseMove)
+  }
+})
 
 const formattedMinutes = computed(() => Math.floor(timeLeft.value / 60).toString().padStart(2, '0'))
 const formattedSeconds = computed(() => (timeLeft.value % 60).toString().padStart(2, '0'))
@@ -300,8 +322,15 @@ const onUIMouseEnter = () => { setHoveringUI(true) }
 const onUIMouseLeave = () => { setHoveringUI(false) }
 const onUITouchStart = () => { setHoveringUI(true) }
 const onUITouchEnd = () => { setHoveringUI(false) }
-onMounted(() => { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); timeInterval = setInterval(() => { currentTime.value = new Date() }, 1000) })
-onUnmounted(() => { if (timer) clearInterval(timer); if (timeInterval) clearInterval(timeInterval) })
+
+onMounted(() => {
+  if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission()
+  timeInterval = setInterval(() => { currentTime.value = new Date() }, 1000)
+})
+onUnmounted(() => {
+  if (timer) clearInterval(timer)
+  if (timeInterval) clearInterval(timeInterval)
+})
 </script>
 
 <style scoped>
@@ -310,6 +339,11 @@ onUnmounted(() => { if (timer) clearInterval(timer); if (timeInterval) clearInte
   transition: all 0.3s ease; background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px);
   border-radius: 10px; padding: 0.8rem 1.2rem; border: 1px solid rgba(255, 255, 255, 0.2);
   display: flex; align-items: center; gap: 1rem; color: white; font-family: 'Courier New', monospace;
+}
+.countdown-clock.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(-10px);
 }
 .system-time { font-size: 0.9rem; font-weight: 500; opacity: 0.8; padding-left: 1rem; border-left: 1px solid rgba(255, 255, 255, 0.2); }
 .online-indicator { display: flex; align-items: center; gap: 0.5rem; padding-right: 1rem; border-right: 1px solid rgba(255, 255, 255, 0.2); }
